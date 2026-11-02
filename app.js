@@ -114,14 +114,29 @@ function ocupado(sim) {
 // ---------- coleta ----------
 // ---------- coleta manual ----------
 const TRAVA_MAX = 2 * 3600e3;
+const TRAVA_WEB_MAX = 15 * 60e3;
 
 async function obterTrava() {
   const { coletaEmAndamento } = await chrome.storage.local.get('coletaEmAndamento');
-  if (coletaEmAndamento && Date.now() - coletaEmAndamento.desde < TRAVA_MAX) return false;
-  await chrome.storage.local.set({ coletaEmAndamento: { desde: Date.now(), origem: 'manual' } });
+  const agora = Date.now();
+  const pulso = coletaEmAndamento?.pulsoEm || coletaEmAndamento?.desde || 0;
+  const limite = window.PRAZOS_WEB ? TRAVA_WEB_MAX : TRAVA_MAX;
+  if (coletaEmAndamento && agora - pulso < limite) return null;
+  const token = `${agora.toString(36)}-${Math.random().toString(36).slice(2)}`;
+  await chrome.storage.local.set({ coletaEmAndamento: { desde: agora, pulsoEm: agora, origem: 'manual', token } });
+  return token;
+}
+async function renovarTrava(token) {
+  const { coletaEmAndamento } = await chrome.storage.local.get('coletaEmAndamento');
+  if (coletaEmAndamento?.token !== token) return false;
+  await chrome.storage.local.set({ coletaEmAndamento: { ...coletaEmAndamento, pulsoEm: Date.now() } });
   return true;
 }
-const soltarTrava = () => chrome.storage.local.remove('coletaEmAndamento');
+async function soltarTrava(token) {
+  const { coletaEmAndamento } = await chrome.storage.local.get('coletaEmAndamento');
+  if (coletaEmAndamento && coletaEmAndamento.token !== token) return;
+  await chrome.storage.local.remove('coletaEmAndamento');
+}
 
 function ganchosDeColeta() {
   return {
@@ -141,11 +156,15 @@ function concluir(r) {
 
 async function executar(tarefa, textoFim) {
   estado.coletando = true; // antes da trava, para a tela não confundir a própria busca com a automática
-  if (!(await obterTrava())) {
+  const tokenTrava = await obterTrava();
+  if (!tokenTrava) {
+    const { coletaEmAndamento } = await chrome.storage.local.get('coletaEmAndamento');
     estado.coletando = false;
-    progresso(0, 1, 'A busca automática está rodando agora. Aguarde ela terminar; a tela se atualiza sozinha.');
+    const desde = coletaEmAndamento?.desde ? new Date(coletaEmAndamento.desde).toLocaleTimeString('pt-BR') : 'horário desconhecido';
+    progresso(0, 1, `Já há uma coleta em andamento desde ${desde}. Se nenhuma outra aba estiver coletando, a trava antiga será recuperada em até 15 minutos.`);
     return;
   }
+  const pulsoTrava = setInterval(() => renovarTrava(tokenTrava).catch(e => console.warn('Falha ao renovar a trava da coleta:', e)), 30 * 1000);
   estado.controle = new AbortController();
   ocupado(true);
   try {
@@ -160,7 +179,8 @@ async function executar(tarefa, textoFim) {
     else { log(`Erro: ${e.message}`); progresso(0, 1, `Erro: ${e.message}`); }
   } finally {
     estado.coletando = false;
-    await soltarTrava();
+    clearInterval(pulsoTrava);
+    await soltarTrava(tokenTrava);
     ocupado(false);
     desenhar();
   }
@@ -960,12 +980,15 @@ async function importarCalendario() {
 
 async function copiarDiagnostico() {
   await calWebDiagChain;
-  const d = await chrome.storage.local.get(['calDiag', 'calPagina', 'calTela', 'calCapturas', 'calendarioTJCE', 'calHtml', 'calWebDiag']);
+  const d = await chrome.storage.local.get(['calDiag', 'calPagina', 'calTela', 'calCapturas', 'calendarioTJCE', 'calHtml', 'calWebDiag', 'coletaEmAndamento']);
   const linhas = [`Diagnóstico do Calendário TJCE — ${new Date().toLocaleString('pt-BR')} — extensão ${chrome.runtime.getManifest().version}`, ''];
   linhas.push('== Registro (calendário) ==');
   linhas.push(...$('#registro').textContent.split('\n').filter(l => /Calendário/.test(l)).slice(0, 20));
   linhas.push('', '== Registro persistido da coleta web ==');
   for (const item of (d.calWebDiag || []).slice(0, 20)) linhas.push(`${item.quando} | ${item.mensagem}`);
+  linhas.push('', '== Estado da coleta ==', d.coletaEmAndamento
+    ? `Em andamento desde ${new Date(d.coletaEmAndamento.desde).toISOString()}; último pulso ${d.coletaEmAndamento.pulsoEm ? new Date(d.coletaEmAndamento.pulsoEm).toISOString() : 'não registrado'}; origem ${d.coletaEmAndamento.origem || 'desconhecida'}.`
+    : 'Nenhuma trava ativa.');
   linhas.push('', '== Página do calendário ==', JSON.stringify(d.calPagina || 'não aberta ainda', null, 1));
   linhas.push('', `== Requisições da página (${(d.calDiag || []).length}) ==`);
   for (const r of (d.calDiag || []).slice(0, 40)) linhas.push(`${r.metodo} ${r.status} ${r.url} | ${r.tipoConteudo} | ${r.tamanho} car. | ${r.datas} datas | ${r.inicio}`);
