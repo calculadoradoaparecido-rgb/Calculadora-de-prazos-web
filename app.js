@@ -169,6 +169,14 @@ async function executar(tarefa, textoFim) {
 const textoResultado = r => `Concluído: ${r.novas.length} matéria(s) nova(s) com datas.` +
   (r.falhas.length ? ` ${r.falhas.length} matéria(s) não abriram mesmo após 4 tentativas; use "Tentar as que falharam" mais tarde.` : ' Nenhuma falha.');
 
+function fonteParaCalendarioWeb(fonte) {
+  if (fonte?.tipo === 'fullcalendar') {
+    logCalendarioWeb('Calendário web: a fonte salva era FullCalendar da extensão; vou redescobrir os eventos no HTML oficial.');
+    return null;
+  }
+  return fonte;
+}
+
 /**
  * modo 'incremental': o que saiu desde a última atualização (DJEA + calendário a partir daquele mês).
  * modo 'completo': todas as páginas de todas as pesquisas e o calendário do ano inteiro (só quando pedido).
@@ -187,7 +195,7 @@ async function buscar(modo = 'incremental') {
     if (window.PRAZOS_WEB) {
       // Na versão web não existe background nem aba auxiliar da extensão: tenta ler o calendário diretamente via proxy.
       try {
-        const calWeb = await obterCalendario(cfg.ano, estado.calTJCE?.fonte, logCalendarioWeb);
+        const calWeb = await obterCalendario(cfg.ano, fonteParaCalendarioWeb(estado.calTJCE?.fonte), logCalendarioWeb);
         if (calWeb?.datas?.length) {
           estado.calTJCE = mesclarCalendario(estado.calTJCE, calWeb.datas, calWeb.fonte);
           await chrome.storage.local.set({ calendarioTJCE: estado.calTJCE });
@@ -902,7 +910,10 @@ async function importarCalendario() {
     const { calCapturas = [], calTela = [] } = await chrome.storage.local.get(['calCapturas', 'calTela']);
     const cap = lerCapturas(calCapturas);
     const tela = datasDaTela(calTela);
-    const fonte = estado.calTJCE?.fonte || cap.fonte;
+    const fonteAnterior = estado.calTJCE?.fonte || cap.fonte;
+    const fonte = window.PRAZOS_WEB
+      ? (fonteParaCalendarioWeb(fonteAnterior) || (cap.fonte?.tipo === 'url' ? cap.fonte : null))
+      : fonteAnterior;
     let r = null;
     try { r = await obterCalendario(ano, fonte, window.PRAZOS_WEB ? logCalendarioWeb : log); }
     catch (e) { (window.PRAZOS_WEB ? logCalendarioWeb : log)(`Calendário: ${e.message}`); }
