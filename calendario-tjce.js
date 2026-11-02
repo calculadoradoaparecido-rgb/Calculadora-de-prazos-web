@@ -154,14 +154,14 @@ function jsonsEmbutidos(codigo) {
  * .eventos_calendario usados para inicializar o FullCalendar. */
 function eventosDoHtml(html) {
   const doc = new DOMParser().parseFromString(html, 'text/html');
-  return [...doc.querySelectorAll('.eventos_calendario')].map(el => ({
+  return [...doc.querySelectorAll('.eventos_calendario')].map(el => eventoDeObjeto({
     id: el.getAttribute('data-id') || '',
     title: el.getAttribute('data-title') || '',
     start: el.getAttribute('data-start') || '',
     end: el.getAttribute('data-end') || '',
     description: el.getAttribute('data-description') || '',
     backgroundColor: el.getAttribute('data-background-color') || ''
-  })).filter(e => lerData(e.start) && (e.title || e.description));
+  })).filter(Boolean);
 }
 
 // Converte objeto literal simples de JS em JSON (chaves sem aspas, aspas simples, vírgula final).
