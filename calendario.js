@@ -61,8 +61,24 @@ export function calendarioBase(ano) {
 export function montarMapa(anos, extras = []) {
   const mapa = new Map();
   const add = e => { if (!mapa.has(e.data)) mapa.set(e.data, []); mapa.get(e.data).push(e); };
-  for (const a of anos) calendarioBase(a).forEach(add);
-  extras.forEach(add);
+  // Uma portaria pode transferir a comemoração do Dia do Servidor (28/10)
+  // para outra data. Nesse caso, o registro anual antigo e qualquer cópia
+  // importada dele não podem continuar fechando o dia original.
+  const semAcentos = s => String(s || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  const servidor = e => semAcentos([e.motivo, e.fonte, e.titulo, e.trecho].join(' ')).includes('dia do servidor');
+  const transferidos = new Set();
+  for (const e of extras) {
+    const texto = semAcentos([e.motivo, e.fonte, e.titulo, e.trecho].join(' '));
+    if (!/transferir as comemoracoes/.test(texto)) continue;
+    const origem = texto.match(/do dia\s+(\d{1,2})\s+de outubro de\s+(\d{4})/);
+    if (origem) transferidos.add(`${origem[2]}-10-${origem[1].padStart(2, '0')}`);
+  }
+  for (const a of anos) calendarioBase(a).forEach(e => {
+    if (!(transferidos.has(e.data) && servidor(e))) add(e);
+  });
+  extras.forEach(e => {
+    if (!(transferidos.has(e.data) && servidor(e))) add(e);
+  });
   return mapa;
 }
 

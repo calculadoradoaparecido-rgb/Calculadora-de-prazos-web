@@ -27,3 +27,6 @@ Os dados são locais neste navegador. Limpar dados do site ou usar outro perfil/
 
 ## Atualização de persistência web (IndexedDB)
 A versão web usa IndexedDB para armazenar dados localmente por navegador/perfil, inclusive registros maiores de calendário e cadastro de juízes. O arquivo `index.html` é a entrada padrão do Cloudflare Pages. Ao atualizar o projeto, publique os arquivos da pasta `feriados-tjce` na raiz do repositório, substituindo os arquivos existentes.
+
+## Correção da transferência do Dia do Servidor
+Quando os dados importados registram a transferência da comemoração do Dia do Servidor de 28 de outubro para outra data, a calculadora deixa de tratar o dia original como fechado e usa a data transferida informada pelo ato.

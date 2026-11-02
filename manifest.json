@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Prazos CPC e Feriados Municipais — TJCE Cariri",
-  "version": "2.17.1",
+  "version": "2.17.6",
   "description": "Calculadora de prazos do CPC/2015 com feriados municipais das comarcas do Cariri lidos das portarias do DJEA do TJCE.",
   "permissions": [
     "storage",

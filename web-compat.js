@@ -105,7 +105,7 @@
   window.chrome = {
     storage: { local: storage, onChanged: { addListener(fn) { listeners.add(fn); } } },
     runtime: {
-      getManifest: () => ({ version: '2.17.5-web' }),
+      getManifest: () => ({ version: '2.17.6-web' }),
       getURL: path => new URL(path, location.href).href,
       sendMessage: async msg => {
         if (msg?.cmd === 'reagendar') return { ok: true, web: true };
