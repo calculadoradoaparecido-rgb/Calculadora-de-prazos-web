@@ -23,3 +23,7 @@ Não publique como ferramenta final até concluir o proxy e os testes funcionais
 5. uso em Chrome e Edge.
 
 Os dados são locais neste navegador. Limpar dados do site ou usar outro perfil/dispositivo pode removê-los/não os compartilhar.
+
+
+## Atualização de persistência web (IndexedDB)
+A versão web usa IndexedDB para armazenar dados localmente por navegador/perfil, inclusive registros maiores de calendário e cadastro de juízes. O arquivo `index.html` é a entrada padrão do Cloudflare Pages. Ao atualizar o projeto, publique os arquivos da pasta `feriados-tjce` na raiz do repositório, substituindo os arquivos existentes.
