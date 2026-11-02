@@ -1,5 +1,5 @@
 // Calendário Eletrônico do TJCE (https://www.tjce.jus.br/calendario/).
-// Os eventos são carregados por JavaScript. Este módulo:
+// A página inclui eventos em nós ocultos e os usa para montar o calendário visual. Este módulo:
 //  1) entende listas de eventos em formatos comuns (FullCalendar, WordPress, JSON próprio);
 //  2) tenta descobrir sozinho de onde a página carrega os eventos;
 //  3) repete uma consulta capturada no navegador (cal-gancho.js) para o ano inteiro.
@@ -149,6 +149,20 @@ function jsonsEmbutidos(codigo) {
   return achados;
 }
 
+/** Os eventos do TJCE também vêm renderizados no HTML, em nós ocultos
+ * .eventos_calendario usados para inicializar o FullCalendar. */
+function eventosDoHtml(html) {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return [...doc.querySelectorAll('.eventos_calendario')].map(el => ({
+    id: el.getAttribute('data-id') || '',
+    title: el.getAttribute('data-title') || '',
+    start: el.getAttribute('data-start') || '',
+    end: el.getAttribute('data-end') || '',
+    description: el.getAttribute('data-description') || '',
+    backgroundColor: el.getAttribute('data-background-color') || ''
+  })).filter(e => lerData(e.start) && (e.title || e.description));
+}
+
 // Converte objeto literal simples de JS em JSON (chaves sem aspas, aspas simples, vírgula final).
 function paraJson(js) {
   return js
@@ -215,6 +229,11 @@ async function provarUrl(url, ano, log) {
  */
 export async function descobrirCalendario(ano, log = () => {}) {
   const html = await texto(URL_CALENDARIO);
+  const eventosHtml = eventosDoHtml(html);
+  if (eventosHtml.length) {
+    log(`Calendário: ${eventosHtml.length} evento(s) lidos dos dados incorporados no HTML oficial.`);
+    return { fonte: { tipo: 'pagina' }, eventos: eventosHtml };
+  }
   const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
   const inline = scripts.map(s => s[2]).filter(Boolean);
   const embutidos = inline.flatMap(jsonsEmbutidos);

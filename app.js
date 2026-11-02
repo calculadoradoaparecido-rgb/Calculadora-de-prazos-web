@@ -879,7 +879,7 @@ function desenharCalendarioInfo() {
   const munis = new Set(c.datas.flatMap(d => d.municipios));
   const quando = new Date(c.atualizadoEm).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
   el.textContent = `${c.datas.length} data(s) importada(s), ${munis.size} município(s) das comarcas. Atualizado em ${quando}` +
-    (c.fonte?.tipo === 'url' ? '; a busca diária também atualiza.' : '.');
+    (['url', 'pagina'].includes(c.fonte?.tipo) ? '; a busca automática também consulta o calendário.' : '.');
 }
 
 async function importarCalendario() {
@@ -898,6 +898,11 @@ async function importarCalendario() {
     const datas = [...(r?.datas || []), ...cap.datas, ...tela];
     if (tela.length) log(`Calendário: ${tela.length} data(s) lidas da tela do calendário.`);
     if (!datas.length) {
+      if (window.PRAZOS_WEB) {
+        estado.importandoCal = false;
+        info.textContent = 'Não consegui ler eventos do calendário oficial nesta tentativa. Os dados já importados foram preservados; confira o registro e tente novamente mais tarde.';
+        return;
+      }
       // Eventos embutidos na página (FullCalendar): abre o calendário em segundo plano e percorre os meses.
       info.textContent = 'Abrindo o calendário do TJCE em segundo plano e percorrendo os meses de ' + ano + '…';
       log('Calendário: lendo pelo próprio calendário (aba em segundo plano).');
