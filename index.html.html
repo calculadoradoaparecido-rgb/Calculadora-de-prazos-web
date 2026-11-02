@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prazos e feriados — TJCE Cariri</title>
+<link rel="stylesheet" href="app.css">
+<meta name="theme-color" content="#17365d"><link rel="manifest" href="site.webmanifest"></head>
+<body>
+<header class="topo">
+  <div>
+    <h1>Calculadora de prazos processuais</h1>
+    <p class="sub">CPC e CPP, com os feriados municipais das comarcas lidos das portarias do DJEA e do Calendário do TJCE.</p>
+  </div>
+  <nav class="abas" role="tablist">
+    <button role="tab" id="abaCalc" aria-selected="true" aria-controls="painelCalc">Cível (CPC)</button>
+    <button role="tab" id="abaPenal" aria-selected="false" aria-controls="painelPenal">Criminal (CPP)</button>
+    <button role="tab" id="abaJuiz" aria-selected="false" aria-controls="painelJuiz">Juízes</button>
+    <button role="tab" id="abaFer" aria-selected="false" aria-controls="painelFer">Feriados e coleta</button>
+  </nav>
+</header>
+
+<!-- ===================== CALCULADORA ===================== -->
+<section id="painelCalc" role="tabpanel" class="calc">
+  <form id="formCalc" class="frase" autocomplete="off">
+    <p>
+      Prazo de <input id="cPrazo" type="number" min="1" max="365" value="15" class="sub-linha curto" aria-label="Quantidade de dias">
+      dias
+      <select id="cUnidade" class="sub-linha" aria-label="Forma de contagem">
+        <option value="uteis">úteis (CPC, art. 219)</option>
+        <option value="corridos">corridos</option>
+      </select>
+    </p>
+    <p>
+      contados da
+      <select id="cEvento" class="sub-linha" aria-label="Evento">
+        <option value="djen">disponibilização no DJEN / DJe</option>
+        <option value="portal">intimação enviada pelo sistema (PJe)</option>
+        <option value="ciencia">ciência ou juntada (marco legal já identificado)</option>
+      </select>
+      em <input id="cData" type="date" class="sub-linha" required aria-label="Data do evento">
+    </p>
+    <p class="nota-ajuda">
+      Ao escolher “ciência ou juntada”, informe a data do marco legal aplicável à forma de comunicação processual, previamente identificada por você. A calculadora não determina automaticamente se a ciência, a juntada ou outro evento é o marco inicial correto para o caso concreto (CPC, art. 231).
+    </p>
+    <p>
+      na comarca de
+      <select id="cComarca" class="sub-linha" aria-label="Comarca"></select>
+    </p>
+    <p>
+      <select id="cMunicipais" class="sub-linha" aria-label="Feriados municipais">
+        <option value="sim">incluindo</option>
+        <option value="nao">sem</option>
+      </select>
+      os feriados municipais da comarca.
+    </p>
+    <div class="opcoes">
+      <label class="marca"><input type="checkbox" id="cDobro"> Prazo em dobro (Fazenda Pública, MP ou Defensoria)</label>
+      <label class="marca"><input type="checkbox" id="cVinculadas"> Considerar também feriados dos municípios vinculados</label>
+      <label class="marca"><input type="checkbox" id="cGeraisDjea" checked> Usar pontos facultativos gerais lidos no DJEA</label>
+    </div>
+    <details class="extras">
+      <summary>Outras datas sem expediente</summary>
+      <label>Uma por linha, no formato <code>dd/mm/aaaa motivo</code>. Útil para indisponibilidade do PJe.
+        <textarea id="cExtras" rows="3" placeholder="14/10/2026 Indisponibilidade do PJe"></textarea>
+      </label>
+    </details>
+    <button type="submit" class="primario grande">Calcular prazo</button>
+  </form>
+
+  <div id="resultado" class="resultado" aria-live="polite">
+    <p class="vazio-calc">Preencha a data do evento e clique em "Calcular prazo".</p>
+  </div>
+</section>
+
+<!-- ===================== CRIMINAL (CPP) ===================== -->
+<section id="painelPenal" role="tabpanel" class="calc" hidden>
+  <form id="formPenal" class="frase" autocomplete="off">
+    <p>
+      Prazo de <input id="pPrazo" type="number" min="1" max="365" value="5" class="sub-linha curto" aria-label="Quantidade de dias">
+      dias corridos <span class="nota-inline">(CPP, art. 798)</span>
+    </p>
+    <p>
+      contados da
+      <select id="pEvento" class="sub-linha" aria-label="Evento">
+        <option value="djen">disponibilização no DJEN / DJe</option>
+        <option value="portal">intimação enviada pelo sistema (PJe)</option>
+        <option value="intimacao">intimação pessoal, em audiência ou ciência inequívoca</option>
+      </select>
+      em <input id="pData" type="date" class="sub-linha" required aria-label="Data do evento">
+    </p>
+    <p>
+      na comarca de
+      <select id="pComarca" class="sub-linha" aria-label="Comarca"></select>
+    </p>
+    <p>
+      <select id="pMunicipais" class="sub-linha" aria-label="Feriados municipais">
+        <option value="sim">incluindo</option>
+        <option value="nao">sem</option>
+      </select>
+      os feriados municipais da comarca.
+    </p>
+    <div class="opcoes">
+      <label class="marca"><input type="checkbox" id="pDobro"> Defensoria Pública (prazo em dobro)</label>
+      <label class="marca"><input type="checkbox" id="pExcecao"> Réu preso, Lei Maria da Penha ou medida urgente (corre de 20/12 a 20/01)</label>
+      <label class="marca"><input type="checkbox" id="pVinculadas"> Considerar também feriados dos municípios vinculados</label>
+      <label class="marca"><input type="checkbox" id="pGeraisDjea" checked> Usar pontos facultativos gerais lidos no DJEA</label>
+    </div>
+    <details class="extras">
+      <summary>Outras datas sem expediente</summary>
+      <label>Uma por linha, no formato <code>dd/mm/aaaa motivo</code>.
+        <textarea id="pExtras" rows="3" placeholder="14/10/2026 Indisponibilidade do PJe"></textarea>
+      </label>
+    </details>
+    <details class="extras regras">
+      <summary>Regras aplicadas</summary>
+      <ul>
+        <li>Prazo contínuo: fins de semana e feriados no meio do prazo contam (art. 798).</li>
+        <li>Não se conta o dia da intimação; a contagem começa no primeiro dia útil seguinte (art. 798, § 1º; Súmula 310 do STF).</li>
+        <li>Corre da intimação, e não da juntada do mandado (Súmula 710 do STF).</li>
+        <li>Se o último dia não tiver expediente, ou tiver expediente encerrado antes, vence no dia útil seguinte (art. 798, § 3º).</li>
+        <li>Suspensão de 20/12 a 20/01, salvo réu preso, Maria da Penha ou medida urgente (art. 798-A).</li>
+        <li>Prazo em dobro só para a Defensoria Pública; o Ministério Público não tem prazo em dobro no processo penal.</li>
+      </ul>
+    </details>
+    <button type="submit" class="primario grande">Calcular prazo</button>
+  </form>
+
+  <div id="resultadoPenal" class="resultado" aria-live="polite">
+    <p class="vazio-calc">Preencha a data do evento e clique em "Calcular prazo".</p>
+  </div>
+</section>
+
+<!-- ===================== JUÍZES ===================== -->
+<section id="painelJuiz" role="tabpanel" class="juizes" hidden>
+  <div class="j-cab">
+    <div>
+      <h2>Juízes por unidade</h2>
+      <p class="j-resumo" id="jResumo"></p>
+    </div>
+    <div class="j-ctrl">
+      <label>Situação em <input id="jData" type="date"></label>
+      <label>Comarca <select id="jComarca"></select></label>
+      <label>Área
+        <select id="jArea">
+          <option value="">Todas</option>
+          <option value="civel">Cível e família</option>
+          <option value="criminal">Criminal</option>
+        </select>
+      </label>
+    </div>
+  </div>
+
+  <div class="tabela-rolagem j-moldura">
+    <table class="j-tabela" id="tabelaUnid">
+      <thead><tr><th>Unidade</th><th>Titular</th><th>Situação</th><th>Responde</th><th>Conferência DJEA</th><th></th></tr></thead>
+      <tbody></tbody>
+    </table>
+  </div>
+  <div class="j-rodape">
+    <span>
+      <button id="btnNovaUnidade" class="link">+ Adicionar unidade</button>
+      <button id="btnUsarSugestoes" class="link" hidden></button>
+    </span>
+    <span class="nota" id="jAtualizado"></span>
+  </div>
+
+  <details class="j-mais">
+    <summary>Designações lidas no DJEA <span id="jQtd"></span></summary>
+    <div class="cab-secao">
+      <span></span>
+      <label>Mostrar
+        <select id="jMostrar">
+          <option value="atuais">Em curso e próximas</option>
+          <option value="todas">Todas</option>
+        </select>
+      </label>
+    </div>
+    <div class="tabela-rolagem">
+      <table id="tabelaJuiz">
+        <thead><tr><th>Período</th><th>Comarca e unidade</th><th>Motivo</th><th>Ausente</th><th>Responde</th><th>Ato</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p id="jVazio" class="vazio" hidden></p>
+  </details>
+</section>
+
+<!-- ===================== FERIADOS E COLETA ===================== -->
+<div id="painelFer" role="tabpanel" class="layout" hidden>
+  <aside class="painel">
+    <section class="bloco">
+      <h2>Coletar no DJEA e no calendário</h2>
+      <label>Ano do ato
+        <input id="ano" type="number" min="2023" max="2100">
+      </label>
+      <label>Termos pesquisados
+        <textarea id="termos" rows="5" spellcheck="false"></textarea>
+        <small>Um por linha. Cada termo vira uma pesquisa separada no DJEA.</small>
+      </label>
+      <label class="marca"><input type="checkbox" id="somentePortarias" checked> Só portarias</label>
+      <label class="marca"><input type="checkbox" id="porComarca" checked> Pesquisar também cada comarca e vinculado pelo nome</label>
+      <label class="marca"><input type="checkbox" id="magistrados" checked> Coletar também férias e designações de juízes</label>
+      <div class="dupla">
+        <label>Páginas por termo <input id="maxPaginas" type="number" min="1" max="200" value="40"></label>
+        <label>Conexões <input id="conexoes" type="number" min="1" max="8" value="3"></label>
+      </div>
+      <div class="acoes">
+        <button id="btnAtualizar" class="primario">Atualizar agora</button>
+        <button id="btnParar" disabled>Parar</button>
+      </div>
+      <p class="nota" id="ultimaAtualizacao" style="margin-top:8px"></p>
+      <button id="btnBuscar" class="link">Carga completa (refaz tudo)</button>
+      <p id="avisoFalhas" class="aviso-falhas" hidden><span></span> <button id="btnRepetir">Tentar as que falharam</button></p>
+    </section>
+
+    <section class="bloco">
+      <h2>Calendário Eletrônico do TJCE</h2>
+      <p class="nota">Importa os feriados municipais, pontos facultativos e suspensões publicados em tjce.jus.br/calendario, para as comarcas de trabalho.</p>
+      <p class="nota" id="calInfo"></p>
+      <div class="acoes">
+        <button id="btnCalImportar" class="primario">Importar do calendário</button>
+        <button id="btnCalAbrir">Abrir o calendário</button>
+      </div>
+      <button id="btnCalDiag" class="link" style="margin-top:8px">Copiar diagnóstico</button>
+    </section>
+
+    <section class="bloco">
+      <h2>Busca automática</h2>
+      <label class="marca"><input type="checkbox" id="autoAtivo"> Atualizar uma vez por dia</label>
+      <label>Horário <input id="autoHora" type="time" value="07:00"></label>
+      <p class="nota">Busca só o que saiu desde a última atualização (DJEA e calendário do TJCE), em segundo plano, com o navegador aberto. Se ficar dias sem rodar, a próxima cobre todo o período. Se o navegador estiver fechado no horário, roda assim que ele abrir. Você recebe um aviso quando surgir feriado novo nas comarcas.</p>
+      <p class="nota" id="autoStatus"></p>
+      <button id="btnAutoAgora">Rodar agora em segundo plano</button>
+    </section>
+
+    <details class="bloco">
+      <summary>Varrer uma faixa de IDs</summary>
+      <p class="nota">Use se a pesquisa por termo não trouxer resultados. Cada ID é uma matéria do DJEA; o mais alto já visto aparece abaixo.</p>
+      <div class="dupla">
+        <label>Do ID <input id="idIni" type="number" min="1"></label>
+        <label>Até o ID <input id="idFim" type="number" min="1"></label>
+      </div>
+      <p class="nota" id="maiorId"></p>
+      <button id="btnVarrer">Varrer faixa</button>
+    </details>
+
+    <details class="bloco">
+      <summary>Analisar uma matéria</summary>
+      <label>ID ou link da matéria <input id="umaMateria" placeholder="167989 ou https://djea-con.tjce.jus.br/materias/167989"></label>
+      <button id="btnAnalisar">Analisar</button>
+      <pre id="resultadoUma" class="saida" hidden></pre>
+    </details>
+
+    <details class="bloco">
+      <summary>Dados salvos</summary>
+      <p class="nota" id="infoCache"></p>
+      <div class="acoes">
+        <button id="btnReanalisar">Reanalisar salvos</button>
+        <button id="btnLimpar" class="perigo">Apagar tudo</button>
+      </div>
+      <h3 class="sub-bloco">Compartilhar</h3>
+      <p class="nota">Gera a extensão completa com tudo o que já foi coletado e o cadastro de juízes. Quem receber descompacta, carrega em chrome://extensions e já abre com os dados.</p>
+      <div class="acoes">
+        <button id="btnExportarZip" class="primario">Exportar extensão com dados</button>
+      </div>
+      <p class="nota" style="margin-top:10px">Para quem já tem a extensão, basta o arquivo de dados:</p>
+      <div class="acoes">
+        <button id="btnExportarJson">Exportar dados (.json)</button>
+        <button id="btnImportarJson">Importar dados</button>
+        <input type="file" id="arquivoImportar" accept=".json,application/json" hidden>
+      </div>
+      <p class="nota" id="infoCompartilhar"></p>
+    </details>
+
+    <details class="bloco" id="blocoRegistro">
+      <summary>Registro</summary>
+      <pre id="registro" class="saida"></pre>
+    </details>
+  </aside>
+
+  <main class="principal">
+    <div id="progresso" class="progresso" hidden>
+      <div class="trilho"><span id="barra"></span></div>
+      <p id="progressoTexto"></p>
+    </div>
+
+    <dl class="numeros" id="numeros"></dl>
+
+    <section class="ano-faixa" aria-labelledby="tituloAno">
+      <div class="faixa-cabeca">
+        <h2 id="tituloAno"></h2>
+        <ul class="legenda">
+          <li><i class="t-feriado"></i>Feriado</li>
+          <li><i class="t-ponto"></i>Ponto facultativo</li>
+          <li><i class="t-suspensao"></i>Suspensão</li>
+          <li><i class="t-correm"></i>Prazos não suspensos</li>
+          <li><i class="t-outro"></i>Outros</li>
+        </ul>
+      </div>
+      <div id="meses" class="meses"></div>
+    </section>
+
+    <section class="filtros">
+      <label>Ano <select id="fAno"></select></label>
+      <label class="largo">Comarca <select id="fComarca"></select></label>
+      <label>Tipo
+        <select id="fTipo">
+          <option value="">Todos</option>
+          <option>Feriado</option>
+          <option>Ponto facultativo</option>
+          <option>Suspensão de expediente</option>
+          <option>Expediente alterado</option>
+          <option>Recesso</option>
+          <option>Suspensão de prazos</option>
+          <option>Prazos não suspensos</option>
+        </select>
+      </label>
+      <label class="largo">Buscar no trecho <input id="fBusca" placeholder="padroeiro, aniversário…"></label>
+      <label class="marca"><input type="checkbox" id="fGerais" checked> Incluir feriados nacionais e estaduais</label>
+      <div class="exportar">
+        <button id="btnCsv">CSV</button>
+        <button id="btnJson">JSON</button>
+        <button id="btnIcs">Agenda (.ics)</button>
+      </div>
+    </section>
+
+    <p id="diaAtivo" class="dia-ativo" hidden></p>
+
+    <div class="tabela-rolagem">
+      <table id="tabela">
+        <thead>
+          <tr><th>Data</th><th>Município</th><th>Tipo</th><th>Ato</th><th>Trecho da portaria</th></tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p id="vazio" class="vazio" hidden></p>
+  </main>
+</div>
+<script src="web-compat.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
