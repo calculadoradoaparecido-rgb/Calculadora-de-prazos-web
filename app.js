@@ -87,6 +87,16 @@ function log(msg) {
   const hora = new Date().toLocaleTimeString('pt-BR');
   el.textContent = `[${hora}] ${msg}\n` + el.textContent.slice(0, 20000);
 }
+let calWebDiagChain = Promise.resolve();
+function logCalendarioWeb(msg) {
+  log(msg);
+  calWebDiagChain = calWebDiagChain.then(async () => {
+    const { calWebDiag = [] } = await chrome.storage.local.get('calWebDiag');
+    calWebDiag.unshift({ quando: new Date().toISOString(), mensagem: String(msg).slice(0, 500) });
+    await chrome.storage.local.set({ calWebDiag: calWebDiag.slice(0, 30) });
+  }).catch(e => console.warn('Não foi possível guardar o diagnóstico do calendário:', e));
+  return calWebDiagChain;
+}
 function progresso(feitos, total, texto) {
   $('#progresso').hidden = false;
   $('#barra').style.width = total ? `${Math.round(feitos / total * 100)}%` : '0';
@@ -177,18 +187,18 @@ async function buscar(modo = 'incremental') {
     if (window.PRAZOS_WEB) {
       // Na versão web não existe background nem aba auxiliar da extensão: tenta ler o calendário diretamente via proxy.
       try {
-        const calWeb = await obterCalendario(cfg.ano, estado.calTJCE?.fonte, msg => log(msg));
+        const calWeb = await obterCalendario(cfg.ano, estado.calTJCE?.fonte, logCalendarioWeb);
         if (calWeb?.datas?.length) {
           estado.calTJCE = mesclarCalendario(estado.calTJCE, calWeb.datas, calWeb.fonte);
           await chrome.storage.local.set({ calendarioTJCE: estado.calTJCE });
           resultado.calOk = true;
         } else {
           resultado.calOk = false;
-          log('Calendário web: não foi possível extrair eventos automaticamente nesta tentativa.');
+          logCalendarioWeb('Calendário web: não foi possível extrair eventos automaticamente nesta tentativa.');
         }
       } catch (e) {
         resultado.calOk = false;
-        log(`Calendário web: ${e.message}`);
+        logCalendarioWeb(`Calendário web: ${e.message}`);
       }
     } else {
       const cal = await chrome.runtime.sendMessage({ alvo: 'background', cmd: 'calendarioPorAba', ano: cfg.ano, desde }).catch(() => null);
@@ -894,11 +904,13 @@ async function importarCalendario() {
     const tela = datasDaTela(calTela);
     const fonte = estado.calTJCE?.fonte || cap.fonte;
     let r = null;
-    try { r = await obterCalendario(ano, fonte, log); } catch (e) { log(`Calendário: ${e.message}`); }
+    try { r = await obterCalendario(ano, fonte, window.PRAZOS_WEB ? logCalendarioWeb : log); }
+    catch (e) { (window.PRAZOS_WEB ? logCalendarioWeb : log)(`Calendário: ${e.message}`); }
     const datas = [...(r?.datas || []), ...cap.datas, ...tela];
     if (tela.length) log(`Calendário: ${tela.length} data(s) lidas da tela do calendário.`);
     if (!datas.length) {
       if (window.PRAZOS_WEB) {
+        logCalendarioWeb('Calendário web: esta tentativa não produziu datas para importar.');
         estado.importandoCal = false;
         info.textContent = 'Não consegui ler eventos do calendário oficial nesta tentativa. Os dados já importados foram preservados; confira o registro e tente novamente mais tarde.';
         return;
@@ -929,16 +941,20 @@ async function importarCalendario() {
     estado.importandoCal = false;
     info.textContent = `Erro ao importar o calendário: ${e.message}`;
   } finally {
+    await calWebDiagChain;
     estado.importandoCal = false;
     $('#btnCalImportar').disabled = false;
   }
 }
 
 async function copiarDiagnostico() {
-  const d = await chrome.storage.local.get(['calDiag', 'calPagina', 'calTela', 'calCapturas', 'calendarioTJCE', 'calHtml']);
+  await calWebDiagChain;
+  const d = await chrome.storage.local.get(['calDiag', 'calPagina', 'calTela', 'calCapturas', 'calendarioTJCE', 'calHtml', 'calWebDiag']);
   const linhas = [`Diagnóstico do Calendário TJCE — ${new Date().toLocaleString('pt-BR')} — extensão ${chrome.runtime.getManifest().version}`, ''];
   linhas.push('== Registro (calendário) ==');
   linhas.push(...$('#registro').textContent.split('\n').filter(l => /Calendário/.test(l)).slice(0, 20));
+  linhas.push('', '== Registro persistido da coleta web ==');
+  for (const item of (d.calWebDiag || []).slice(0, 20)) linhas.push(`${item.quando} | ${item.mensagem}`);
   linhas.push('', '== Página do calendário ==', JSON.stringify(d.calPagina || 'não aberta ainda', null, 1));
   linhas.push('', `== Requisições da página (${(d.calDiag || []).length}) ==`);
   for (const r of (d.calDiag || []).slice(0, 40)) linhas.push(`${r.metodo} ${r.status} ${r.url} | ${r.tipoConteudo} | ${r.tamanho} car. | ${r.datas} datas | ${r.inicio}`);

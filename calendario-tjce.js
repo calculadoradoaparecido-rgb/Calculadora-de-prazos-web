@@ -117,8 +117,9 @@ export function classificarEventos(eventos) {
 // ---------- descoberta da fonte ----------
 async function texto(url, opts = {}) {
   const r = await fetch(url, { credentials: 'include', ...opts });
-  if (!r.ok) throw new Error(`HTTP ${r.status}`);
-  return r.text();
+  const corpo = await r.text();
+  if (!r.ok) throw new Error(`HTTP ${r.status} (${r.headers.get('content-type') || 'tipo desconhecido'}): ${corpo.slice(0, 180).replace(/\s+/g, ' ')}`);
+  return corpo;
 }
 
 /** Procura listas JSON com datas dentro de um código JavaScript (eventos embutidos na página). */
@@ -234,6 +235,7 @@ export async function descobrirCalendario(ano, log = () => {}) {
     log(`Calendário: ${eventosHtml.length} evento(s) lidos dos dados incorporados no HTML oficial.`);
     return { fonte: { tipo: 'pagina' }, eventos: eventosHtml };
   }
+  log(`Calendário: HTML oficial recebido sem elementos .eventos_calendario (${html.length} caracteres). Início: ${html.slice(0, 180).replace(/\s+/g, ' ')}`);
   const scripts = [...html.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/gi)];
   const inline = scripts.map(s => s[2]).filter(Boolean);
   const embutidos = inline.flatMap(jsonsEmbutidos);
