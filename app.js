@@ -240,7 +240,9 @@ async function carregarAuto() {
 
 function desenharAuto(auto) {
   const u = auto.ultima;
-  let txt = auto.ativo ? `Atualização agendada para todo dia às ${auto.hora || '07:00'}.` : 'Desligada.';
+  let txt = window.PRAZOS_WEB
+    ? (auto.ativo ? 'Atualização automática ativada: tentará atualizar a cada 6 horas enquanto esta página estiver aberta.' : 'Atualização automática desligada.')
+    : (auto.ativo ? `Atualização agendada para todo dia às ${auto.hora || '07:00'}.` : 'Desligada.');
   if (u) {
     const quando = new Date(u.quando).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
     txt += ` Última execução: ${quando} — ${u.erro ? `erro: ${u.erro}` :
@@ -253,12 +255,44 @@ async function salvarAuto() {
   const { auto = {} } = await chrome.storage.local.get('auto');
   const novo = { ...auto, ativo: $('#autoAtivo').checked, hora: $('#autoHora').value || '07:00' };
   await chrome.storage.local.set({ auto: novo });
-  await chrome.runtime.sendMessage({ alvo: 'background', cmd: 'reagendar' });
+  if (!window.PRAZOS_WEB) await chrome.runtime.sendMessage({ alvo: 'background', cmd: 'reagendar' });
   desenharAuto(novo);
+  if (window.PRAZOS_WEB) iniciarAutoWeb(true);
 }
+
+// Na versão web, a rotina automática existe apenas enquanto esta página está aberta.
+// Faz uma tentativa inicial após 60 segundos e repete a cada 6 horas, sem executar em abas ocultas.
+let timerAutoWeb = null;
+let autoWebEmExecucao = false;
+function iniciarAutoWeb(reiniciar = false) {
+  if (!window.PRAZOS_WEB) return;
+  if (timerAutoWeb) clearTimeout(timerAutoWeb);
+  timerAutoWeb = null;
+  if (!$('#autoAtivo')?.checked) return;
+  const agendar = (ms) => {
+    timerAutoWeb = setTimeout(async () => {
+      timerAutoWeb = null;
+      if (!$('#autoAtivo')?.checked) return;
+      if (document.visibilityState !== 'visible' || estado.coletando || autoWebEmExecucao) { agendar(5 * 60 * 1000); return; }
+      autoWebEmExecucao = true;
+      try { await buscar('incremental'); }
+      finally { autoWebEmExecucao = false; if ($('#autoAtivo')?.checked) agendar(6 * 60 * 60 * 1000); }
+    }, ms);
+  };
+  agendar(reiniciar ? 60 * 1000 : 6 * 60 * 60 * 1000);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (window.PRAZOS_WEB && document.visibilityState === 'visible' && $('#autoAtivo')?.checked && !timerAutoWeb && !estado.coletando) iniciarAutoWeb(true);
+});
 
 async function rodarAutoAgora() {
   $('#btnAutoAgora').disabled = true;
+  if (window.PRAZOS_WEB) {
+    $('#autoStatus').textContent = 'Atualização iniciada nesta página. Mantenha a aba aberta até terminar.';
+    try { await buscar('incremental'); } finally { $('#btnAutoAgora').disabled = false; }
+    return;
+  }
   $('#autoStatus').textContent = 'Busca automática iniciada em segundo plano. Você pode fechar esta aba.';
   await chrome.runtime.sendMessage({ alvo: 'background', cmd: 'coletarAgora' });
   setTimeout(() => { $('#btnAutoAgora').disabled = false; }, 5000);
@@ -1256,6 +1290,11 @@ function ligar() {
   $('#btnRepetir').addEventListener('click', repetirFalhas);
   $('#autoAtivo').addEventListener('change', salvarAuto);
   $('#autoHora').addEventListener('change', salvarAuto);
+  if (window.PRAZOS_WEB) {
+    const hora = $('#autoHora')?.closest('label'); if (hora) hora.hidden = true;
+    const label = $('#autoAtivo')?.closest('label'); if (label) label.lastChild.textContent = ' Atualizar periodicamente enquanto esta página estiver aberta';
+    $('#btnAutoAgora').textContent = 'Atualizar agora nesta página';
+  }
   $('#btnAutoAgora').addEventListener('click', rodarAutoAgora);
   $('#btnParar').addEventListener('click', () => estado.controle?.abort());
   $('#btnAnalisar').addEventListener('click', analisarUma);
@@ -1286,6 +1325,7 @@ function ligar() {
   aplicarCalc(estado.calcSalvo, 'civel');
   aplicarCalc(estado.calcPenalSalvo, 'penal');
   await carregarAuto();
+  iniciarAutoWeb(true);
   desenharUltima();
   await aplicarPacoteEmbutido();
   ouvirMudancas();
