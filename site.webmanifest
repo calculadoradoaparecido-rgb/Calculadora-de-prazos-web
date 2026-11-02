@@ -1,0 +1,9 @@
+{
+  "name": "Prazos CPC e Feriados Municipais — TJCE Cariri",
+  "short_name": "Prazos TJCE",
+  "start_url": "./app.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#17365d",
+  "icons": []
+}
