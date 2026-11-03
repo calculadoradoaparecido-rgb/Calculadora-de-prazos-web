@@ -1,9 +1,10 @@
 {
-  "name": "Prazos CPC e Feriados Municipais — TJCE Cariri",
-  "short_name": "Prazos TJCE",
+  "name": "Ferramenta independente de prazos processuais",
+  "short_name": "Prazos CPC/CPP",
   "start_url": "./app.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#17365d",
-  "icons": []
+  "icons": [],
+  "description": "Ferramenta independente de apoio à contagem de prazos e consulta de feriados."
 }

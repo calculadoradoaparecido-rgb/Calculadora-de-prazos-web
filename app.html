@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Prazos e feriados — TJCE Cariri</title>
+<title>Prazos CPC/CPP e Feriados — Ferramenta independente</title>
+<meta name="description" content="Ferramenta independente de apoio à contagem de prazos processuais e consulta de feriados. Confira sempre as fontes oficiais.">
 <link rel="stylesheet" href="app.css">
 <meta name="theme-color" content="#17365d"><link rel="manifest" href="site.webmanifest"></head>
 <body>
@@ -19,6 +20,8 @@
     <button role="tab" id="abaFer" aria-selected="false" aria-controls="painelFer">Feriados e coleta</button>
   </nav>
 </header>
+
+<p class="aviso-web aviso-institucional"><strong>Ferramenta independente:</strong> não é sistema oficial do TJCE nem possui aprovação institucional confirmada. Confira os atos oficiais e não insira credenciais ou dados processuais sigilosos.</p>
 
 <!-- ===================== CALCULADORA ===================== -->
 <section id="painelCalc" role="tabpanel" class="calc">
@@ -338,6 +341,11 @@
     <p id="vazio" class="vazio" hidden></p>
   </main>
 </div>
+<footer class="aviso-transparencia" role="contentinfo">
+  <p><strong>Ferramenta independente de apoio.</strong> Este site não é sistema oficial nem possui vínculo institucional confirmado com o Tribunal de Justiça do Ceará. Os cálculos são auxiliares: confira os atos oficiais e as regras aplicáveis ao caso concreto.</p>
+  <p>As preferências e os dados importados ficam neste navegador/perfil. Ao solicitar atualização, a ferramenta consulta fontes públicas do TJCE/DJEA pelo serviço de hospedagem. Não informe senhas, credenciais institucionais nem dados processuais sigilosos.</p>
+  <p><a href="privacidade.html">Privacidade, dados armazenados e limitações</a></p>
+</footer>
 <script src="web-compat.js"></script>
 <script type="module" src="app.js"></script>
 </body>

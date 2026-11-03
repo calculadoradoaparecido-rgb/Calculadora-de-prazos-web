@@ -268,3 +268,13 @@ tr.em-curso td { background: #fffaf0; }
 
 /* Aviso específico da edição web */
 .aviso-web { margin: 12px 0; padding: 10px 12px; border: 1px solid var(--borda, #d6dbe1); border-radius: 8px; font-size: 13px; line-height: 1.5; }
+
+
+/* Transparência e aviso de uso independente */
+.aviso-transparencia { max-width: 1280px; margin: 0 auto; padding: 16px 28px 24px; border-top: 1px solid var(--linha); color: var(--cinza); font-size: 12px; line-height: 1.55; }
+.aviso-transparencia p { margin: 6px 0; }
+.aviso-transparencia strong { color: var(--tinta); }
+.aviso-transparencia a { color: var(--acao); }
+@media (max-width: 900px) { .aviso-transparencia { padding: 14px 16px 22px; } }
+
+.aviso-institucional { max-width: 1280px; margin: 12px auto; }

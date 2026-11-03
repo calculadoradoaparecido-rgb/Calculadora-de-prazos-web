@@ -594,7 +594,7 @@ function desenharTabela(linhas) {
       <td class="muni${l.municipio ? '' : ' geral'}">${esc(l.municipio || 'Todo o Estado')}${rotuloVinculo(l.municipio)}${l.unidade ? `<span class="origem">só ${esc(l.unidade)}</span>` : ''}</td>
       <td><span class="selo ${CLASSE_TIPO[l.tipo] || 't-outro'}">${esc(l.tipo)}</span>
         ${l.origem === 'ementa' ? '<span class="origem" title="O município foi lido do cabeçalho do ato, não da mesma frase da data.">município pelo cabeçalho</span>' : ''}</td>
-      <td class="ato">${l.url ? `<a href="${esc(l.url)}" target="_blank" rel="noopener">${esc(l.numero || l.titulo || 'Matéria ' + l.id)}</a><small>${l.origem === 'calendario' ? 'Calendário eletrônico' : 'DJEA ' + esc((l.disponibilizada || '').slice(0, 10))}</small>` : `${esc(l.numero)}<small>${esc(l.titulo)}</small>`}</td>
+      <td class="ato">${l.url ? `${linkSeguro(l.url, l.numero || l.titulo || 'Matéria ' + l.id)}<small>${l.origem === 'calendario' ? 'Calendário eletrônico' : 'DJEA ' + esc((l.disponibilizada || '').slice(0, 10))}</small>` : `${esc(l.numero)}<small>${esc(l.titulo)}</small>`}</td>
       <td class="trecho">${esc(l.trecho)}</td>
     </tr>`).join('');
   const vazio = $('#vazio');
@@ -617,6 +617,22 @@ function rotuloVinculo(m) {
 
 function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// Links originados em dados importados só podem apontar para fontes oficiais conhecidas.
+function urlOficialSegura(valor) {
+  try {
+    const u = new URL(String(valor ?? ''));
+    if (u.protocol !== 'https:' || u.username || u.password || u.port) return '';
+    if (!['djea-con.tjce.jus.br', 'www.tjce.jus.br', 'tjce.jus.br'].includes(u.hostname)) return '';
+    return u.href;
+  } catch { return ''; }
+}
+function linkSeguro(url, rotulo, titulo = '') {
+  const seguro = urlOficialSegura(url);
+  if (!seguro) return esc(rotulo ?? '');
+  const dica = titulo ? ` title="${esc(titulo)}"` : '';
+  return `<a href="${esc(seguro)}" target="_blank" rel="noopener noreferrer"${dica}>${esc(rotulo ?? '')}</a>`;
 }
 
 // ---------- exportação ----------
@@ -704,7 +720,7 @@ function conferir(u, dia, dj, unicaNaComarca) {
   const sit = situacaoUnidade(u, dia, estado.cadastro.atualizadoEm);
   const ativos = dj.eventos.filter(e => casa(e) && ativoEm(e, dia)).sort((a, b) => (b.dataPublicacao || '').localeCompare(a.dataPublicacao || ''));
   const lot = dj.lotacoes.filter(casa).sort((a, b) => (b.data || '').localeCompare(a.data || ''))[0];
-  const link = x => x?.url ? ` <a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(normNum(x.numero) || 'ato')}</a>` : '';
+  const link = x => x?.url ? ` ${linkSeguro(x.url, normNum(x.numero) || 'ato')}` : '';
   const comAfastamento = sit.estado === 'afastado' || sit.estado === 'vaga';
   // Unidade sem titular cadastrado: o DJEA sugere o titular (botão "Usar").
   const sugestao = !u.titular && lot && sit.estado === 'nao-cadastrado' ? lot.nome : null;
@@ -844,7 +860,7 @@ function desenharJuizes() {
       <td>${esc(e.motivo)}</td>
       <td>${esc(e.ausente || '—')}</td>
       <td>${e.substituto ? esc(e.substituto) + (e.substitutoLotacao ? `<span class="origem">titular de ${esc(e.substitutoLotacao.unidade)}</span>` : '') : '—'}</td>
-      <td class="ato"><a href="${esc(e.url)}" target="_blank" rel="noopener" title="${esc(e.trecho)}">${esc(e.numero || 'Matéria ' + e.id)}</a><small>DJEA ${brC(e.dataPublicacao)}</small></td>
+      <td class="ato">${linkSeguro(e.url, e.numero || 'Matéria ' + e.id, e.trecho)}<small>DJEA ${brC(e.dataPublicacao)}</small></td>
     </tr>`).join('');
   const vazio = $('#jVazio');
   vazio.hidden = lista.length > 0;
@@ -1260,7 +1276,7 @@ function calcular(modo = 'civel') {
     ${naoUteis.length ? `<h3 class="secao">Datas especiais no período</h3>
     <table class="nao-uteis"><tbody>${naoUteis.map(s => `<tr><td>${br(s.iso)}</td><td>${s.itens.map(i =>
       `${esc(i.motivo)}${{ reduzido: ' (expediente reduzido)', informativo: / só /.test(i.motivo) ? ' (vale só para essa unidade; dia contado normalmente)' : ' (o ato diz que os prazos não são suspensos; dia contado normalmente)', suspende: ' (prazos suspensos, expediente normal)' }[i.efeito] || ''} <span class="base">${i.url
-        ? `<a href="${esc(i.url)}" target="_blank" rel="noopener">${esc(i.fonte)}</a>` : esc(i.fonte || '')}</span>`).join('<br>')}</td></tr>`).join('')}</tbody></table>` : ''}`;
+        ? linkSeguro(i.url, i.fonte) : esc(i.fonte || '')}</span>`).join('<br>')}</td></tr>`).join('')}</tbody></table>` : ''}`;
 }
 
 function trilha(r, mapa) {

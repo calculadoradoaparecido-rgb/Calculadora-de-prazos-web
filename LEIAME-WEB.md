@@ -30,3 +30,7 @@ A versão web usa IndexedDB para armazenar dados localmente por navegador/perfil
 
 ## Correção da transferência do Dia do Servidor
 Quando os dados importados registram a transferência da comemoração do Dia do Servidor de 28 de outubro para outra data, a calculadora deixa de tratar o dia original como fechado e usa a data transferida informada pelo ato.
+
+
+## Revisão de segurança
+Esta versão inclui restrições adicionais no proxy, cabeçalhos de segurança em `_headers`, aviso de independência e página `privacidade.html`. Confira `REVISAO-SEGURANCA.md`. A compatibilidade das rotas do calendário precisa ser testada após a publicação; rotas não autorizadas são intencionalmente rejeitadas. Isso não garante liberação do domínio pela VPN do TJCE.
